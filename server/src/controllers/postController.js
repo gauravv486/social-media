@@ -1,0 +1,129 @@
+import Post from '../models/Post.js';
+import Comment from '../models/Comment.js';
+
+// POST /api/posts  (create post)
+export const createPost = async (req, res) => {
+  try {
+    const { content, image } = req.body;
+
+    if (!content && !image) {
+      return res.status(400).json({ message: 'Post cannot be empty' });
+    }
+
+    const post = await Post.create({
+      author: req.user._id,
+      content,
+      image: image || '',
+    });
+
+    const populated = await post.populate('author', 'username fullName profilePicture');
+
+    res.status(201).json(populated);
+    
+  } catch (err) {
+    console.error('Create post error:', err);
+    res.status(500).json({ message: 'Server error creating post' });
+  }
+};
+
+// GET /api/posts  (feed: latest posts)
+export const getPosts = async (req, res) => {
+  try {
+    const posts = await Post.find()
+      .populate('author', 'username fullName profilePicture')
+      .sort({ createdAt: -1 });
+
+    res.json(posts);
+  } catch (err) {
+    console.error('Get posts error:', err);
+    res.status(500).json({ message: 'Server error fetching posts' });
+  }
+};
+
+// DELETE /api/posts/:id  (delete own post)
+export const deletePost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    if (post.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not allowed to delete this post' });
+    }
+
+    await Comment.deleteMany({ post: post._id });
+    await post.deleteOne();
+
+    res.json({ message: 'Post deleted' });
+  } catch (err) {
+    console.error('Delete post error:', err);
+    res.status(500).json({ message: 'Server error deleting post' });
+  }
+};
+
+// POST /api/posts/:id/like  (toggle like)
+export const toggleLike = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user._id;
+
+    const post = await Post.findById(postId);
+
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    const alreadyLiked = post.likes.some(
+      (likeId) => likeId.toString() === userId.toString()
+    );
+
+    if (alreadyLiked) {
+      post.likes = post.likes.filter(
+        (likeId) => likeId.toString() !== userId.toString()
+      );
+    } else {
+      post.likes.push(userId);
+    }
+
+    await post.save();
+
+    const populated = await post
+      .populate('author', 'username fullName profilePicture')
+      .execPopulate?.() || post; // for older mongoose versions, you may need different syntax
+
+    res.json(populated);
+  } catch (err) {
+    console.error('Toggle like error:', err);
+    res.status(500).json({ message: 'Server error liking post' });
+  }
+};
+
+// POST /api/posts/:id/comment  (add comment)
+export const addComment = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const { content } = req.body;
+
+    if (!content) {
+      return res.status(400).json({ message: 'Comment cannot be empty' });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    const comment = await Comment.create({
+      post: postId,
+      author: req.user._id,
+      content,
+    });
+
+    post.comments.push(comment._id);
+    await post.save();
+
+    const populated = await comment
+      .populate('author', 'username fullName profilePicture');
+
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error('Add comment error:', err);
+    res.status(500).json({ message: 'Server error adding comment' });
+  }
+};
