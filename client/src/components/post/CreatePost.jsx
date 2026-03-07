@@ -1,132 +1,155 @@
 import React, { useState, useRef } from 'react';
 import API from '../../api/axios.js';
 import useAuthStore from '../../store/authStore.js';
+import { BsImage, BsPlayCircle, BsCalendarEvent } from 'react-icons/bs';
+import { HiOutlineNewspaper } from 'react-icons/hi';
+import { IoCloseOutline } from 'react-icons/io5';
 
 const CreatePost = ({ fetchPosts }) => {
     const { user } = useAuthStore();
     const [content, setContent] = useState('');
-    const [image, setImage] = useState(null);       // actual file
-    const [preview, setPreview] = useState(null);   // preview URL
+    const [image, setImage] = useState(null);
+    const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(false);
-    const fileInputRef = useRef(null);              // to trigger file input click
+    const fileInputRef = useRef(null);
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             setImage(file);
-            setPreview(URL.createObjectURL(file));  // instant preview
+            setPreview(URL.createObjectURL(file));
         }
     };
 
     const removeImage = () => {
         setImage(null);
         setPreview(null);
-        fileInputRef.current.value = '';            // reset file input
+        fileInputRef.current.value = '';
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         try {
             setLoading(true);
-
-            // ✅ FormData instead of JSON (needed for file upload)
             const formData = new FormData();
             formData.append('content', content);
-            if (image) {
-                formData.append('image', image);
-            }
-
+            if (image) formData.append('image', image);
             await API.post('/posts/createpost', formData);
-
-            console.log("reached")
-
-            // Reset
             setContent('');
             setImage(null);
             setPreview(null);
             fileInputRef.current.value = '';
             fetchPosts();
-
         } catch (error) {
-            console.error('Error creating post:', error);          // already have this
-            console.error('Response:', error.response?.data);      // ← add this
-            console.error('Status:', error.response?.status);      // ← add this
-            console.error('Message:', error.message);              // ← add this
+            console.error('Error creating post:', error);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <div
+            className="bg-white rounded-lg mb-2"
+            style={{ border: '1px solid #e0ddd6' }}
+        >
             <form onSubmit={handleSubmit}>
 
-                {/* ── Top Row: Avatar + Textarea ── */}
-                <div className="flex gap-3">
+                {/* ── Top Row: Avatar + Trigger ── */}
+                <div className="flex items-center gap-2 px-4 pt-3 pb-2">
                     <img
                         src={user?.profilePicture ||
                             `https://ui-avatars.com/api/?name=${user?.fullName}&background=0D8ABC&color=fff`}
-                        className="w-10 h-10 rounded-full object-cover shrink-0"
+                        className="w-12 h-12 rounded-full object-cover shrink-0"
                         alt="avatar"
                     />
                     <textarea
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        placeholder="What's on your mind?"
-                        className="flex-1 resize-none outline-none text-sm text-gray-800 placeholder-gray-400 pt-2"
-                        rows="3"
+                        placeholder="Start a post"
+                        rows={content ? 3 : 1}
+                        className="flex-1 resize-none text-sm rounded-full px-4 py-2.5 outline-none"
+                        style={{
+                            border: '1px solid #b0aca4',
+                            color: '#000000e0',
+                            backgroundColor: '#fff',
+                            lineHeight: '1.5',
+                        }}
                     />
                 </div>
 
                 {/* ── Image Preview ── */}
                 {preview && (
-                    <div className="relative mt-3 ml-13">
+                    <div className="relative mx-4 mb-3">
                         <img
                             src={preview}
                             alt="Preview"
-                            className="w-full max-h-72 object-cover rounded-xl"
+                            className="w-full max-h-80 object-cover rounded-lg"
                         />
-                        {/* Remove image button */}
                         <button
                             type="button"
                             onClick={removeImage}
-                            className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs hover:bg-opacity-70"
+                            className="absolute top-2 right-2 rounded-full w-8 h-8 flex items-center justify-center transition"
+                            style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff' }}
                         >
-                            ✕
+                            <IoCloseOutline size={18} />
                         </button>
                     </div>
                 )}
 
                 {/* ── Divider ── */}
-                <div className="border-t border-gray-100 mt-3 pt-3 flex items-center justify-between">
+                <div style={{ borderTop: '1px solid #e0ddd6' }} />
 
-                    {/* Image Upload Button */}
-                    <div>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            ref={fileInputRef}
-                            className="hidden"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current.click()}
-                            className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition"
-                        >
-                            🖼️ Photo
-                        </button>
+                {/* ── Bottom Actions ── */}
+                <div className="flex items-center justify-between px-2 py-1">
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center">
+
+                        {/* Photo */}
+                        <div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                ref={fileInputRef}
+                                className="hidden"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current.click()}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition"
+                                style={{ color: '#666666' }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.backgroundColor = '#f3f2ef';
+                                    e.currentTarget.style.color = '#0a66c2';
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = '#666666';
+                                }}
+                            >
+                                <BsImage size={18} style={{ color: '#70b5f9' }} />
+                                <span className="hidden sm:inline">Photo</span>
+                            </button>
+                        </div>
+
+                        
                     </div>
 
-                    {/* Post Button */}
-                    <button
-                        type="submit"
-                        disabled={loading || !content.trim()}
-                        className="px-5 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                    >
-                        {loading ? 'Posting...' : 'Post'}
-                    </button>
+                    {/* Post Button — only visible when content is typed */}
+                    {(content.trim() || image) && (
+                        <button
+                            type="submit"
+                            disabled={loading || !content.trim()}
+                            className="px-4 py-1.5 text-sm font-semibold rounded-full transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            style={{
+                                backgroundColor: '#0a66c2',
+                                color: '#fff',
+                            }}
+                        >
+                            {loading ? 'Posting...' : 'Post'}
+                        </button>
+                    )}
 
                 </div>
             </form>

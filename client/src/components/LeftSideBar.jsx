@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore.js';
+import { BsBookmark, BsPeople, BsGear } from 'react-icons/bs';
+import { HiOutlineUsers } from 'react-icons/hi';
 
 const LeftSidebar = () => {
   const { user } = useAuthStore();
@@ -8,61 +10,89 @@ const LeftSidebar = () => {
   return (
     <div className="w-64 sticky top-16 h-fit">
 
-      {/* Profile Card */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-3">
+      {/* ── Profile Card ── */}
+      <div
+        className="bg-white rounded-lg overflow-hidden mb-2"
+        style={{ border: '1px solid #e0ddd6' }}
+      >
+        {/* Cover */}
+        <div className="h-14 bg-gradient-to-r from-blue-300 to-blue-500" />
 
-        {/* Cover Picture */}
-        <div className="h-16 bg-gradient-to-r from-blue-400 to-blue-600" />
-
-        {/* Avatar */}
-        <div className="px-4 pb-4">
-          <div className="-mt-8 mb-3">
+        {/* Avatar + Info */}
+        <div className="px-3 pb-3">
+          <div className="-mt-7 mb-2">
             <img
-              src={user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.fullName}&background=0D8ABC&color=fff`}
+              src={user?.profilePicture ||
+                `https://ui-avatars.com/api/?name=${user?.fullName}&background=0D8ABC&color=fff`}
               alt={user?.fullName}
-              className="w-16 h-16 rounded-full border-2 border-white object-cover"
+              className="w-14 h-14 rounded-full border-2 border-white object-cover"
             />
           </div>
 
-          {/* User Info */}
           <Link to={`/profile/${user?.username}`}>
-            <h2 className="font-semibold text-gray-900 hover:underline hover:text-blue-600 cursor-pointer">
+            <h2
+              className="text-sm font-semibold hover:underline"
+              style={{ color: '#000000e0' }}
+            >
               {user?.fullName}
             </h2>
           </Link>
-          <p className="text-xs text-gray-500 mt-0.5">{user?.bio || 'No bio yet'}</p>
+          <p className="text-xs mt-0.5" style={{ color: '#00000099' }}>
+            {user?.bio || 'Add a bio'}
+          </p>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-100" />
+        <div style={{ borderTop: '1px solid #e0ddd6' }} />
 
-        {/* Stats */}
-        <div className="px-4 py-3 space-y-2">
+
+        {/* Divider */}
+        <div style={{ borderTop: '1px solid #e0ddd6' }} />
+
+        {/* Followers / Following */}
+        <div className="px-3 py-2 space-y-1">
           <div className="flex justify-between text-xs">
-            <span className="text-gray-500">Followers</span>
-            <span className="font-semibold text-blue-600">{user?.followers?.length || 0}</span>
+            <span style={{ color: '#00000099' }}>Followers</span>
+            <span
+              className="font-semibold"
+              style={{ color: '#0a66c2' }}
+            >
+              {user?.followers?.length || 0}
+            </span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-gray-500">Following</span>
-            <span className="font-semibold text-blue-600">{user?.following?.length || 0}</span>
+            <span style={{ color: '#00000099' }}>Following</span>
+            <span
+              className="font-semibold"
+              style={{ color: '#0a66c2' }}
+            >
+              {user?.following?.length || 0}
+            </span>
           </div>
         </div>
 
       </div>
 
-      {/* Nav Links */}
-      <div className="bg-white rounded-xl shadow-sm p-3 space-y-1">
+      {/* ── Nav Links ── */}
+      <div
+        className="bg-white rounded-lg py-2"
+        style={{ border: '1px solid #e0ddd6' }}
+      >
         {[
-          { label: '🔖 Saved Posts', path: '/saved' },
-          { label: '👥 Suggestions', path: '/suggestions' },
-          { label: '⚙️ Settings', path: '/settings' },
-        ].map((item) => (
+          { label: 'Saved Posts',  path: '/saved',       Icon: BsBookmark   },
+          { label: 'Suggestions',  path: '/suggestions', Icon: HiOutlineUsers },
+          { label: 'Settings',     path: '/settings',    Icon: BsGear       },
+        ].map(({ label, path, Icon }) => (
           <Link
-            key={item.path}
-            to={item.path}
-            className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition"
+            key={path}
+            to={path}
+            className="flex items-center gap-3 px-3 py-2 text-sm rounded transition"
+            style={{ color: '#00000099' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f3f2ef'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
           >
-            {item.label}
+            <Icon size={18} style={{ color: '#00000099' }} />
+            <span>{label}</span>
           </Link>
         ))}
       </div>

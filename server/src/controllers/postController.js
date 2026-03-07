@@ -1,6 +1,7 @@
 import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
 import uploadImage from '../utils/uploadImage.js';
+import User from '../models/User.js';
 
 
 // POST /api/posts  (create post)
@@ -143,3 +144,16 @@ export const addComment = async (req, res) => {
     res.status(500).json({ message: 'Server error adding comment' });
   }
 };
+
+
+export const getMyPosts = async (req, res) => {
+  const user = await User.findOne({ username: req.params.username });
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const posts = await Post.find({ author: user._id })
+    .populate('author', 'fullName username profilePicture bio')
+    .populate('comments.user', 'fullName username profilePicture')
+    .sort({ createdAt: -1 });
+
+  res.json(posts);
+}

@@ -4,16 +4,41 @@ import useAuthStore from '../../store/authStore.js';
 import { Link } from 'react-router-dom';
 import FollowButton from '../FollowButton.jsx';
 import PostComment from '../PostComment.jsx';
+import { AiOutlineLike, AiFillLike } from 'react-icons/ai';
+import { BiComment } from 'react-icons/bi';
+import { RiSendPlaneLine } from 'react-icons/ri';
+import { BsThreeDots } from 'react-icons/bs';
+import { IoTrashOutline } from 'react-icons/io5';
 
 const PostCard = ({ post, fetchPosts }) => {
   const { user } = useAuthStore();
   const [showComments, setShowComments] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
+  // ── Real-time optimistic state ──
+  const [likes, setLikes] = useState(post.likes || []);
+  const [comments, setComments] = useState(post.comments || []);
+
+  const isLiked = likes.includes(user?._id);
+  const isOwner = post.author?._id === user?._id;
+
+  // ── Optimistic Like (instant UI, no fetchPosts) ──
   const handleLike = async () => {
+    // Optimistically update UI first
+    if (isLiked) {
+      setLikes((prev) => prev.filter((id) => id !== user._id));
+    } else {
+      setLikes((prev) => [...prev, user._id]);
+    }
     try {
       await likePost(post._id);
-      fetchPosts();
     } catch (error) {
+      // Revert on failure
+      if (isLiked) {
+        setLikes((prev) => [...prev, user._id]);
+      } else {
+        setLikes((prev) => prev.filter((id) => id !== user._id));
+      }
       console.error('Error liking post:', error);
     }
   };
@@ -28,143 +53,218 @@ const PostCard = ({ post, fetchPosts }) => {
     }
   };
 
-  const isLiked = post.likes?.includes(user?._id);
-  const isOwner = post.author?._id === user?._id;
+  // Called by PostComment after adding a new comment
+  const handleCommentAdded = (newComment) => {
+    setComments((prev) => [...prev, newComment]);
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
+    <div
+      className="bg-white rounded-lg mb-2"
+      style={{ border: '1px solid #e0ddd6' }}
+    >
 
-      {/* Author Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
+      {/* ── Author Header ── */}
+      <div className="flex items-start justify-between px-4 pt-3 pb-2">
+
+        {/* Left: Avatar + Info */}
+        <div className="flex items-start gap-2 min-w-0">
+
           {/* Avatar */}
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-            {post.author?.profilePicture ? (
-              <img
-                src={post.author.profilePicture}
-                alt={post.author.fullName}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              post.author?.fullName?.charAt(0).toUpperCase()
-            )}
-          </div>
+          <Link to={`/profile/${post.author?.username}`} className="shrink-0">
+            <img
+              src={
+                post.author?.profilePicture ||
+                `https://ui-avatars.com/api/?name=${post.author?.fullName}&background=0D8ABC&color=fff`
+              }
+              alt={post.author?.fullName}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          </Link>
 
-          {/* Author Info */}
-          <div>
-            <Link to={`/profile/${post.author?.username}`}>
-              <p className="font-semibold text-gray-900 text-sm">
-                {post.author?.fullName}
-              </p>
-            </Link>
+          {/* Name + Follow + Bio + Date */}
+          <div className="flex flex-col min-w-0">
 
-            <p className="text-xs text-gray-500">@{post.author?.username}</p>
-            <p className="text-xs text-gray-400">
+            {/* Row 1: Name · Follow */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Link to={`/profile/${post.author?.username}`}>
+                <span
+                  className="text-sm font-semibold hover:underline leading-tight"
+                  style={{ color: '#000000e0' }}
+                >
+                  {post.author?.fullName}
+                </span>
+              </Link>
+
+              {/* ✅ Inline · Follow — only for others */}
+              {!isOwner && (
+                <>
+                  <span style={{ color: '#00000040' }}>·</span>
+                  <FollowButton
+                    targetUsername={post.author.username}
+                    targetUserId={post.author._id}
+                  />
+                </>
+              )}
+            </div>
+
+            {/* Row 2: Bio */}
+            <span
+              className="text-xs truncate max-w-xs"
+              style={{ color: '#00000099' }}
+            >
+              {post.author?.bio || post.author?.username}
+            </span>
+
+            {/* Row 3: Date */}
+            <span className="text-xs" style={{ color: '#00000066' }}>
               {new Date(post.createdAt).toLocaleDateString('en-IN', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
-              })}
-            </p>
+              })} · 🌐
+            </span>
           </div>
-
-          <div className='pl-60'>
-            <FollowButton
-              targetUsername={post.author.username}
-              targetUserId={post.author._id}
-            />
-          </div>
-
         </div>
 
-        {/* Delete button (owner only) */}
-        {isOwner && (
+        {/* Right: Three-dot menu */}
+        <div className="relative shrink-0 ml-2">
           <button
-            onClick={handleDelete}
-            className="text-xs text-red-500 hover:text-red-700"
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1.5 rounded-full transition"
+            style={{ color: '#00000099' }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f2ef')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
-            Delete
+            <BsThreeDots size={20} />
           </button>
-        )}
+
+          {showMenu && (
+            <div
+              className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-xl z-20 py-1"
+              style={{ border: '1px solid #e0ddd6' }}
+            >
+              {isOwner && (
+                <button
+                  onClick={() => { handleDelete(); setShowMenu(false); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-50 transition"
+                >
+                  <IoTrashOutline size={16} />
+                  Delete post
+                </button>
+              )}
+              <button
+                onClick={() => setShowMenu(false)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition"
+                style={{ color: '#00000099' }}
+              >
+                Not interested
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Post Content */}
-      <p className="text-gray-800 text-sm mb-3 leading-relaxed">
+      {/* ── Post Content ── */}
+      <p
+        className="px-4 pb-3 text-sm leading-relaxed"
+        style={{ color: '#000000e0' }}
+      >
         {post.content}
       </p>
 
-      {/* Post Image */}
+      {/* ── Post Image ── */}
       {post.image && (
         <img
           src={post.image}
           alt="Post"
-          className="w-full rounded-lg object-cover mb-3 max-h-96"
+          className="w-full object-cover max-h-[500px]"
         />
       )}
 
-      {/* Likes & Comments Count */}
-      <div className="flex items-center justify-between text-xs text-gray-500 py-2 border-t border-b border-gray-100 mb-2">
-        <span>
-          {post.likes?.length > 0 && `❤️ ${post.likes.length} likes`}
-        </span>
-        <span
-          onClick={() => setShowComments(!showComments)}
-          className="cursor-pointer hover:underline"
+      {/* ── Likes & Comments Count ── */}
+      {(likes.length > 0 || comments.length > 0) && (
+        <div
+          className="flex items-center justify-between px-4 py-1.5 text-xs"
+          style={{ color: '#00000099' }}
         >
-          {post.comments?.length > 0 && `${post.comments.length} comments`}
-        </span>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2 pt-1">
-        {/* Like Button */}
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition flex-1 justify-center ${isLiked ? 'text-red-500' : 'text-gray-600'
-            }`}
-        >
-          <span>{isLiked ? '❤️' : '🤍'}</span>
-          <span>Like</span>
-        </button>
-
-        {/* Comment Button */}
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex-1 justify-center"
-        >
-          {/* <PostComment
-            postId={post._id}
-            comments={post.comments}
-          /> */}
-          Comments
-        </button>
-
-        {/* Share Button */}
-        <button
-          className="flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex-1 justify-center"
-        >
-          <span>↗️</span>
-          <span>Share</span>
-        </button>
-      </div>
-
-      {/* Comments Section (toggle) */}
-      {showComments && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          {post.comments?.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-2">
-              No comments yet. Be the first!
-            </p>
-          ) : (
-            <p className="text-xs text-gray-400 text-center py-2">
-              <PostComment
-            postId={post._id}
-            comments={post.comments}
-          />
-            </p>
+          {likes.length > 0 && (
+            <div className="flex items-center gap-1">
+              <div
+                className="w-4 h-4 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: '#0a66c2' }}
+              >
+                <AiFillLike size={10} color="#fff" />
+              </div>
+              <span>{likes.length}</span>
+            </div>
+          )}
+          {comments.length > 0 && (
+            <span
+              className="ml-auto hover:underline cursor-pointer"
+              onClick={() => setShowComments(!showComments)}
+            >
+              {comments.length} comment{comments.length > 1 ? 's' : ''}
+            </span>
           )}
         </div>
       )}
+
+      {/* ── Divider ── */}
+      <div className="mx-4" style={{ borderTop: '1px solid #e0ddd6' }} />
+
+      {/* ── Action Buttons ── */}
+      <div className="flex items-center px-2 py-1">
+        {[
+          {
+            icon: isLiked
+              ? <AiFillLike size={20} style={{ color: '#0a66c2' }} />
+              : <AiOutlineLike size={20} />,
+            label: 'Like',
+            onClick: handleLike,
+            active: isLiked,
+          },
+          {
+            icon: <BiComment size={20} />,
+            label: 'Comment',
+            onClick: () => setShowComments(!showComments),
+            active: showComments,
+          },
+          {
+            icon: <RiSendPlaneLine size={20} />,
+            label: 'Send',
+            onClick: () => {},
+            active: false,
+          },
+        ].map(({ icon, label, onClick, active }) => (
+          <button
+            key={label}
+            onClick={onClick}
+            className="flex items-center gap-1.5 flex-1 justify-center py-2 rounded-lg text-sm font-semibold transition"
+            style={{ color: active ? '#0a66c2' : '#666666' }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f2ef')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            {icon}
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Comments Section ── */}
+      {showComments && (
+        <div
+          className="px-4 pt-3 pb-2"
+          style={{ borderTop: '1px solid #e0ddd6' }}
+        >
+          <PostComment
+            postId={post._id}
+            comments={comments}
+            onCommentAdded={handleCommentAdded}
+          />
+        </div>
+      )}
+
     </div>
   );
 };
