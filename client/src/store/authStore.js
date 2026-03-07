@@ -14,16 +14,18 @@ const useAuthStore = create((set) => ({
         set({ loading: true, error: null });
         try {
 
-            const response = await axios.post('https://localhost:5000/api/auth/register', userData);
+            const response = await axios.post('http://localhost:5000/api/auth/register', userData);
             const token = response.data.token;
             localStorage.setItem('token', token);
 
             set({
-                user: response.data,
+                user: response.data.user,
                 token: token,
                 isAuthenticated: true,
                 loading: false,
             });
+
+            return { success: true };
 
         } catch (error) {
             set({
@@ -32,6 +34,7 @@ const useAuthStore = create((set) => ({
             });
             throw error;
         }
+
     },
 
     // LOGIN ACTION

@@ -19,7 +19,7 @@ export const createPost = async (req, res) => {
     const populated = await post.populate('author', 'username fullName profilePicture');
 
     res.status(201).json(populated);
-    
+
   } catch (err) {
     console.error('Create post error:', err);
     res.status(500).json({ message: 'Server error creating post' });
@@ -31,6 +31,13 @@ export const getPosts = async (req, res) => {
   try {
     const posts = await Post.find()
       .populate('author', 'username fullName profilePicture')
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'author',
+          select: 'username fullName profilePicture'
+        }
+      })
       .sort({ createdAt: -1 });
 
     res.json(posts);
@@ -87,9 +94,9 @@ export const toggleLike = async (req, res) => {
 
     const populated = await post
       .populate('author', 'username fullName profilePicture')
-      .execPopulate?.() || post; // for older mongoose versions, you may need different syntax
 
     res.json(populated);
+
   } catch (err) {
     console.error('Toggle like error:', err);
     res.status(500).json({ message: 'Server error liking post' });
@@ -118,10 +125,11 @@ export const addComment = async (req, res) => {
     post.comments.push(comment._id);
     await post.save();
 
-    const populated = await comment
-      .populate('author', 'username fullName profilePicture');
+    // ✅ Populate author before sending back
+    const populatedComment = await comment.populate('author', 'username fullName profilePicture');
 
-    res.status(201).json(populated);
+    res.status(201).json(populatedComment);  // ✅ send single populated comment
+
   } catch (err) {
     console.error('Add comment error:', err);
     res.status(500).json({ message: 'Server error adding comment' });

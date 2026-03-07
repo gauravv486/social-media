@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import authRoutes from './src/routes/authRoutes.js';
 import postRoutes from './src/routes/postRoutes.js'
 import cors from 'cors'
+import useRoutes from './src/routes/userRoutes.js'
 
 dotenv.config();
 
@@ -17,7 +18,8 @@ app.use(cors({
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
-app.use('/api/posts' , postRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/users', useRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'socail media api is running' });

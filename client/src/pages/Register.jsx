@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore.js';
 
 const Register = () => {
-    const { login, loading, error , register } = useAuthStore();
-      const navigate = useNavigate();
+    const { login, loading, error, register } = useAuthStore();
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -15,11 +15,13 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            await register(formData);
+        const result = await register(formData);
+
+        if (result.success) {
             navigate('/');
-        } catch (err) {
-            console.error('Login error:', err);
+        } else {
+            console.error('Register error:', result.error);
+            // show toast / set local error state etc.
         }
     };
 
@@ -119,12 +121,12 @@ const Register = () => {
                         disabled={loading}
                         className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
                     >
-                        {loading ? 'Signing in...' : 'Sign In'}
+                        {loading ? 'Signing in...' : 'Sign Up'}
                     </button>
                 </form>
 
                 {/* Register Link */}
-                <p className="text-center mt-6 text-sm text-gray-600">
+                {/* <p className="text-center mt-6 text-sm text-gray-600">
                     Don't have an account?{' '}
                     <button
                         type="button"
@@ -133,7 +135,7 @@ const Register = () => {
                     >
                         Create account
                     </button>
-                </p>
+                </p> */}
             </div>
         </div>
     );

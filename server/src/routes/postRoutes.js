@@ -8,6 +8,6 @@ router.post('/createpost', isAutherized, createPost);
 router.get('/getpost', isAutherized, getPosts);
 router.delete('/deletepost', isAutherized, deletePost);
 router.post('/likepost/:id/like', isAutherized, toggleLike);
-router.post('/comment/:id/comment', isAutherized, addComment);
+router.post('/:id/comment', isAutherized, addComment);
 
 export default router;

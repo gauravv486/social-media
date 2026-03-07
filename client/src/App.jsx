@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Feed from './pages/Feed';
 import useAuthStore from './store/authStore.js';
+import UserProfile from './components/UserProfile.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -60,6 +61,10 @@ function App() {
           <Register />
         </PublicRoute>
       ),
+    },
+    {
+      path : "/profile/:username" ,
+      element : <UserProfile />
     },
     {
       path: "*",
