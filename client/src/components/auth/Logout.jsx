@@ -5,7 +5,7 @@ const Logout = () => {
   const { logout } = useAuthStore();
 
   const handleClick = () => {
-    logout();
+      localStorage.setItem("token" , '');
   };
 
   return (

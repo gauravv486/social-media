@@ -1,30 +1,38 @@
 import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
+import uploadImage from '../utils/uploadImage.js';
+
 
 // POST /api/posts  (create post)
-export const createPost = async (req, res) => {
-  try {
-    const { content, image } = req.body;
 
-    if (!content && !image) {
-      return res.status(400).json({ message: 'Post cannot be empty' });
+export const createPost = async (req, res) => {
+
+  try {
+    const { content } = req.body;
+    let imageUrl = '';
+
+    if (req.file) {
+      console.log('Uploading to cloudinary...');
+      imageUrl = await uploadImage(req.file.buffer, 'posts');
+      console.log('Cloudinary URL →', imageUrl);
     }
 
     const post = await Post.create({
       author: req.user._id,
       content,
-      image: image || '',
+      image: imageUrl,
     });
 
     const populated = await post.populate('author', 'username fullName profilePicture');
-
     res.status(201).json(populated);
 
-  } catch (err) {
-    console.error('Create post error:', err);
-    res.status(500).json({ message: 'Server error creating post' });
+  } catch (error) {
+    console.error('FULL ERROR →', error);  // ← this will show real error
+    res.status(500).json({ message: 'Server error' });
   }
 };
+
+
 
 // GET /api/posts  (feed: latest posts)
 export const getPosts = async (req, res) => {
@@ -50,7 +58,7 @@ export const getPosts = async (req, res) => {
 // DELETE /api/posts/:id  (delete own post)
 export const deletePost = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.postId);
 
     if (!post) return res.status(404).json({ message: 'Post not found' });
 

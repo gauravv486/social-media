@@ -52,7 +52,7 @@ const PostCard = ({ post, fetchPosts }) => {
 
           {/* Author Info */}
           <div>
-            <Link to={`/profile/${user?.username}`}>
+            <Link to={`/profile/${post.author?.username}`}>
               <p className="font-semibold text-gray-900 text-sm">
                 {post.author?.fullName}
               </p>

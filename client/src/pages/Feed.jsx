@@ -4,6 +4,7 @@ import useAuthStore from '../store/authStore.js';
 import CreatePost from '../components/post/CreatePost';
 import PostCard from '../components/post/PostCard';
 import LeftSidebar from '../components/LeftSideBar.jsx';
+import Logout from '../components/auth/Logout.jsx';
 
 
 const Feed = () => {
@@ -38,6 +39,9 @@ const Feed = () => {
               alt="avatar"
             />
           </div>
+        </div> 
+        <div>
+          <Logout />
         </div>
       </header>
 
