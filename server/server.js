@@ -11,7 +11,11 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-    origin: 'http://localhost:5173', // Your React app URL
+    origin: [
+        'http://localhost:5173',
+        'https://nexus-roan-three-60.vercel.app',  // ← your Vercel URL
+        /\.vercel\.app$/,                           // ← covers all preview URLs
+    ],
     credentials: true,
 }));
 
