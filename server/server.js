@@ -34,4 +34,4 @@ export default app;
 
 await connectDB();
 const port = 5000;
-app.listen(port, () => console.log(`server is running on ${port}`));
+app.listen(process.env.PORT, () => console.log(`server is running on ${port}`));
