@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-    baseURL: 'https://nexus-server.onrender.com/api',
+    baseURL: 'https://nexus-server-35ov.onrender.com/api',
 });
 
 // Add token to every request
