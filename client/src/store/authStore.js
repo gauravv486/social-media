@@ -13,8 +13,7 @@ const useAuthStore = create((set) => ({
     register: async (userData) => {
         set({ loading: true, error: null });
         try {
-
-            const response = await axios.post('http://localhost:5000/api/auth/register', userData);
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, userData);
             const token = response.data.token;
             localStorage.setItem('token', token);
 
@@ -34,21 +33,19 @@ const useAuthStore = create((set) => ({
             });
             throw error;
         }
-
     },
 
     // LOGIN ACTION
     login: async (credentials) => {
         set({ loading: true, error: null });
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', credentials);
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, credentials);
 
             const token = response.data.token;
-
             localStorage.setItem('token', token);
 
             set({
-                user: response.user,
+                user: response.data.user, // ✅ fixed: was response.user (missing .data)
                 token: token,
                 isAuthenticated: true,
                 loading: false,
@@ -80,7 +77,7 @@ const useAuthStore = create((set) => ({
         }
 
         try {
-            const response = await axios.get('http://localhost:5000/api/auth/me', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             set({
