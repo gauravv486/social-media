@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { likePost, deletePost } from '../../api/posts';
+import { likePost, deletePost } from '../../api/posts.js';
 import useAuthStore from '../../store/authStore.js';
 import { Link } from 'react-router-dom';
 import FollowButton from '../FollowButton.jsx';
@@ -10,21 +10,20 @@ import { RiSendPlaneLine } from 'react-icons/ri';
 import { BsThreeDots } from 'react-icons/bs';
 import { IoTrashOutline } from 'react-icons/io5';
 
-const PostCard = ({ post, fetchPosts }) => {
+const PostCard = ({ post, onPostDeleted }) => {
+
   const { user } = useAuthStore();
   const [showComments, setShowComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  // ── Real-time optimistic state ──
   const [likes, setLikes] = useState(post.likes || []);
   const [comments, setComments] = useState(post.comments || []);
 
   const isLiked = likes.includes(user?._id);
   const isOwner = post.author?._id === user?._id;
 
-  // ── Optimistic Like (instant UI, no fetchPosts) ──
   const handleLike = async () => {
-    // Optimistically update UI first
+    // Optimistic update
     if (isLiked) {
       setLikes((prev) => prev.filter((id) => id !== user._id));
     } else {
@@ -33,7 +32,7 @@ const PostCard = ({ post, fetchPosts }) => {
     try {
       await likePost(post._id);
     } catch (error) {
-      // Revert on failure
+      // Rollback on error
       if (isLiked) {
         setLikes((prev) => [...prev, user._id]);
       } else {
@@ -47,13 +46,13 @@ const PostCard = ({ post, fetchPosts }) => {
     if (!window.confirm('Delete this post?')) return;
     try {
       await deletePost(post._id);
-      fetchPosts();
+      // Real-time: remove from parent state
+      if (onPostDeleted) onPostDeleted(post._id);
     } catch (error) {
       console.error('Error deleting post:', error);
     }
   };
 
-  // Called by PostComment after adding a new comment
   const handleCommentAdded = (newComment) => {
     setComments((prev) => [...prev, newComment]);
   };
@@ -64,13 +63,10 @@ const PostCard = ({ post, fetchPosts }) => {
       style={{ border: '1px solid #e0ddd6' }}
     >
 
-      {/* ── Author Header ── */}
-      <div className="flex items-start justify-between px-4 pt-3 pb-2">
+      <div className="flex items-start justify-between px-3 sm:px-4 pt-3 pb-2">
 
-        {/* Left: Avatar + Info */}
         <div className="flex items-start gap-2 min-w-0">
 
-          {/* Avatar */}
           <Link to={`/profile/${post.author?.username}`} className="shrink-0">
             <img
               src={
@@ -78,14 +74,12 @@ const PostCard = ({ post, fetchPosts }) => {
                 `https://ui-avatars.com/api/?name=${post.author?.fullName}&background=0D8ABC&color=fff`
               }
               alt={post.author?.fullName}
-              className="w-12 h-12 rounded-full object-cover"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
             />
           </Link>
 
-          {/* Name + Follow + Bio + Date */}
           <div className="flex flex-col min-w-0">
 
-            {/* Row 1: Name · Follow */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <Link to={`/profile/${post.author?.username}`}>
                 <span
@@ -96,7 +90,6 @@ const PostCard = ({ post, fetchPosts }) => {
                 </span>
               </Link>
 
-              {/* ✅ Inline · Follow — only for others */}
               {!isOwner && (
                 <>
                   <span style={{ color: '#00000040' }}>·</span>
@@ -108,26 +101,23 @@ const PostCard = ({ post, fetchPosts }) => {
               )}
             </div>
 
-            {/* Row 2: Bio */}
             <span
-              className="text-xs truncate max-w-xs"
+              className="text-xs truncate max-w-[200px] sm:max-w-xs"
               style={{ color: '#00000099' }}
             >
               {post.author?.bio || post.author?.username}
             </span>
 
-            {/* Row 3: Date */}
             <span className="text-xs" style={{ color: '#00000066' }}>
               {new Date(post.createdAt).toLocaleDateString('en-IN', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
-              })} · 🌐
+              })}
             </span>
           </div>
         </div>
 
-        {/* Right: Three-dot menu */}
         <div className="relative shrink-0 ml-2">
           <button
             onClick={() => setShowMenu(!showMenu)}
@@ -165,15 +155,13 @@ const PostCard = ({ post, fetchPosts }) => {
         </div>
       </div>
 
-      {/* ── Post Content ── */}
       <p
-        className="px-4 pb-3 text-sm leading-relaxed"
+        className="px-3 sm:px-4 pb-3 text-sm leading-relaxed break-words"
         style={{ color: '#000000e0' }}
       >
         {post.content}
       </p>
 
-      {/* ── Post Image ── */}
       {post.image && (
         <img
           src={post.image}
@@ -182,10 +170,9 @@ const PostCard = ({ post, fetchPosts }) => {
         />
       )}
 
-      {/* ── Likes & Comments Count ── */}
       {(likes.length > 0 || comments.length > 0) && (
         <div
-          className="flex items-center justify-between px-4 py-1.5 text-xs"
+          className="flex items-center justify-between px-3 sm:px-4 py-1.5 text-xs"
           style={{ color: '#00000099' }}
         >
           {likes.length > 0 && (
@@ -210,11 +197,9 @@ const PostCard = ({ post, fetchPosts }) => {
         </div>
       )}
 
-      {/* ── Divider ── */}
-      <div className="mx-4" style={{ borderTop: '1px solid #e0ddd6' }} />
+      <div className="mx-3 sm:mx-4" style={{ borderTop: '1px solid #e0ddd6' }} />
 
-      {/* ── Action Buttons ── */}
-      <div className="flex items-center px-2 py-1">
+      <div className="flex items-center px-1 sm:px-2 py-1">
         {[
           {
             icon: isLiked
@@ -233,28 +218,27 @@ const PostCard = ({ post, fetchPosts }) => {
           {
             icon: <RiSendPlaneLine size={20} />,
             label: 'Send',
-            onClick: () => {},
+            onClick: () => { },
             active: false,
           },
         ].map(({ icon, label, onClick, active }) => (
           <button
             key={label}
             onClick={onClick}
-            className="flex items-center gap-1.5 flex-1 justify-center py-2 rounded-lg text-sm font-semibold transition"
+            className="flex items-center gap-1 sm:gap-1.5 flex-1 justify-center py-2 rounded-lg text-xs sm:text-sm font-semibold transition"
             style={{ color: active ? '#0a66c2' : '#666666' }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f2ef')}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             {icon}
-            <span>{label}</span>
+            <span className="hidden sm:inline">{label}</span>
           </button>
         ))}
       </div>
 
-      {/* ── Comments Section ── */}
       {showComments && (
         <div
-          className="px-4 pt-3 pb-2"
+          className="px-3 sm:px-4 pt-3 pb-2"
           style={{ borderTop: '1px solid #e0ddd6' }}
         >
           <PostComment

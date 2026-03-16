@@ -33,7 +33,7 @@ const Login = () => {
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Social Media</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Nexus</h1>
                     <p className="text-gray-600">Sign in to your account</p>
                 </div>
 

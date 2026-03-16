@@ -1,25 +1,25 @@
 import { create } from "zustand";
-import axios from 'axios';
+import API from '../api/axios.js';
 
 const useAuthStore = create((set) => ({
 
     user: null,
-    token: localStorage.getItem('token') || null,
     isAuthenticated: false,
+    isCheckingAuth: true,
     loading: false,
     error: null,
+
+    // Set user directly (used by FollowButton, etc.)
+    setUser: (user) => set({ user }),
 
     // ACTIONS
     register: async (userData) => {
         set({ loading: true, error: null });
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, userData);
-            const token = response.data.token;
-            localStorage.setItem('token', token);
+            const response = await API.post('/auth/register', userData);
 
             set({
                 user: response.data.user,
-                token: token,
                 isAuthenticated: true,
                 loading: false,
             });
@@ -39,14 +39,10 @@ const useAuthStore = create((set) => ({
     login: async (credentials) => {
         set({ loading: true, error: null });
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, credentials);
-
-            const token = response.data.token;
-            localStorage.setItem('token', token);
+            const response = await API.post('/auth/login', credentials);
 
             set({
-                user: response.data.user, // ✅ fixed: was response.user (missing .data)
-                token: token,
+                user: response.data.user,
                 isAuthenticated: true,
                 loading: false,
             });
@@ -59,37 +55,34 @@ const useAuthStore = create((set) => ({
         }
     },
 
-    logout: () => {
-        localStorage.removeItem('token');
+    logout: async () => {
+        try {
+            await API.post('/auth/logout');
+        } catch (e) {
+            // ignore logout errors
+        }
         set({
             user: null,
-            token: null,
             isAuthenticated: false,
         });
     },
 
     // CHECK IF USER IS AUTHENTICATED (on app load)
     checkAuth: async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            set({ isAuthenticated: false });
-            return;
-        }
 
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const response = await API.get('/auth/me');
             set({
                 user: response.data,
                 isAuthenticated: true,
+                isCheckingAuth: false
             });
         } catch (error) {
-            localStorage.removeItem('token');
+            console.log("user is not authenticated")
             set({
                 user: null,
-                token: null,
                 isAuthenticated: false,
+                isCheckingAuth: false
             });
         }
     },

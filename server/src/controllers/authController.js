@@ -1,12 +1,13 @@
 import User from "../models/User.js";
 import generateToken from '../utils/generateToken.js';
+import { generateTokenSetCookies } from "../utils/generateTokenSetCookies.js";
 
 export const register = async (req, res) => {
 
     try {
         const { username, email, password, fullName } = req.body;
 
-        // Validate required fields
+
         if (!username || !email || !password || !fullName) {
             return res.status(400).json({
                 message: 'Please provide all required fields'
@@ -25,20 +26,22 @@ export const register = async (req, res) => {
             });
         }
 
-        // const hashedPassword = await bcrypt.hash(password, 10);
-
         const user = await User.create({
             username,
             email,
-            password ,
-            fullName 
+            password,
+            fullName
         });
 
-        res.status(201).json({
+        generateTokenSetCookies(user._id, res);
+
+        const userObj = user.toObject();
+        delete userObj.password;
+
+        return res.status(201).json({
             success: true,
-            messsage: "User signup successfully",
-            user: user,
-            token: generateToken(user._id),
+            message: "User signup successfully",
+            user: userObj,
         })
 
     } catch (error) {
@@ -52,10 +55,6 @@ export const login = async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        // console.log('Login attempt for username:', username);
-        // console.log('Request body:', req.body);
-
-
         if (!username || !password) {
             return res.status(400).json({
                 message: "Please provide email and password"
@@ -63,16 +62,6 @@ export const login = async (req, res) => {
         }
 
         const user = await User.findOne({ username }).select('+password');
-
-
-        console.log('User found:', !!user);
-        console.log('User object:', user ? {
-            id: user._id,
-            username: user.username,
-            hasPassword: !!user.password,
-            passwordValue: user.password ? 'exists' : 'MISSING'
-        } : 'null');
-
 
         if (!user) {
             return res.status(401).json({
@@ -88,11 +77,15 @@ export const login = async (req, res) => {
             });
         }
 
-        res.status(201).json({
+        generateTokenSetCookies(user._id, res);
+
+        const userObj = user.toObject();
+        delete userObj.password;
+
+        return res.status(200).json({
             success: true,
-            messsage: "User login successfully",
-            user: user,
-            token: generateToken(user._id),
+            message: "User login successfully",
+            user: userObj,
         })
 
 
@@ -103,6 +96,17 @@ export const login = async (req, res) => {
         });
     }
 }
+
+export const logout = (req, res) => {
+    res.cookie('jwt', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 0,
+    });
+    return res.json({ message: 'Logged out successfully' });
+};
+
 
 export const getMe = async (req, res) => {
     try {

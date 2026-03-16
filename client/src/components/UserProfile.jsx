@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore.js';
 import API from '../api/axios.js';
-import PostCard from '../components/post/PostCard.jsx';
-import { BsGrid3X3, BsPersonBoundingBox } from 'react-icons/bs';
+import PostCard from './post/PostCard.jsx';
+import EditProfile from './EditProfile.jsx';
+import { BsGrid3X3 } from 'react-icons/bs';
 import { MdOutlineBookmarkBorder } from 'react-icons/md';
-import Logout from '../components/auth/Logout.jsx';
+import Logout from './auth/Logout.jsx';
 
 const UserProfile = () => {
   const { username } = useParams();
@@ -14,7 +15,7 @@ const UserProfile = () => {
   const [profileUser, setProfileUser]   = useState(null);
   const [posts, setPosts]               = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [activeTab, setActiveTab]       = useState('posts'); // 'posts' | 'followers' | 'following'
+  const [activeTab, setActiveTab]       = useState('posts');
 
   useEffect(() => {
     fetchProfile();
@@ -33,7 +34,6 @@ const UserProfile = () => {
     }
   };
 
-  // ✅ Fetch all posts by this user
   const fetchUserPosts = async () => {
     try {
       const { data } = await API.get(`/posts/user/${username}`);
@@ -46,15 +46,33 @@ const UserProfile = () => {
   const handleFollowToggle = async () => {
     try {
       const isFollowing = profileUser.followers.some(f => f._id === currentUser._id);
+
+      // Optimistic update
+      setProfileUser(prev => ({
+        ...prev,
+        followers: isFollowing
+          ? prev.followers.filter(f => f._id !== currentUser._id)
+          : [...prev.followers, { _id: currentUser._id, username: currentUser.username, fullName: currentUser.fullName, profilePicture: currentUser.profilePicture }]
+      }));
+
       if (isFollowing) {
         await API.post(`/users/unfollow/${profileUser.username}`);
       } else {
         await API.post(`/users/follow/${profileUser.username}`);
       }
-      fetchProfile();
     } catch (error) {
       console.error('Follow toggle error:', error);
+      // Rollback on error
+      fetchProfile();
     }
+  };
+
+  const handlePostDeleted = (postId) => {
+    setPosts(prev => prev.filter(p => p._id !== postId));
+  };
+
+  const handleProfileUpdated = (updatedUser) => {
+    setProfileUser(prev => ({ ...prev, ...updatedUser }));
   };
 
   // ── Loading ──
@@ -80,7 +98,7 @@ const UserProfile = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f3f2ef' }}>
 
-      {/* ── Header (matches Feed) ── */}
+      {/* ── Header ── */}
       <header className="bg-white sticky top-0 z-10" style={{ borderBottom: '1px solid #e0ddd6' }}>
         <div className="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center">
           <Link to="/">
@@ -97,7 +115,7 @@ const UserProfile = () => {
                 className="w-6 h-6 rounded-full object-cover"
                 alt="me"
               />
-              <span className="text-xs mt-0.5">Me</span>
+              <span className="text-xs mt-0.5 hidden sm:inline">Me</span>
             </Link>
             <Logout />
           </div>
@@ -105,61 +123,44 @@ const UserProfile = () => {
       </header>
 
       {/* ── Page Body ── */}
-      <div className="max-w-3xl mx-auto px-4 py-5">
+      <div className="max-w-3xl mx-auto px-2 sm:px-4 py-5">
 
         {/* ── Profile Card ── */}
         <div className="bg-white rounded-lg mb-3 overflow-hidden" style={{ border: '1px solid #e0ddd6' }}>
 
           {/* Cover */}
-          <div className="h-24 bg-gradient-to-r from-blue-300 to-blue-500" />
+          <div className="h-20 sm:h-24 bg-gradient-to-r from-blue-300 to-blue-500" />
 
           {/* Avatar row */}
-          <div className="px-5 pb-4">
-            <div className="-mt-12 mb-3 flex items-end justify-between">
+          <div className="px-3 sm:px-5 pb-4">
+            <div className="-mt-10 sm:-mt-12 mb-3 flex items-end justify-between">
               <img
                 src={profileUser.profilePicture ||
                   `https://ui-avatars.com/api/?name=${profileUser.fullName}&background=0D8ABC&color=fff&size=150`}
-                className="w-20 h-20 rounded-full object-cover border-4 border-white"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white"
                 alt={profileUser.fullName}
               />
 
               {/* Action Buttons */}
               <div className="flex gap-2 mb-1">
                 {isOwnProfile ? (
-                  <button
-                    className="px-4 py-1.5 rounded-full text-sm font-semibold transition"
-                    style={{ border: '1px solid #0a66c2', color: '#0a66c2' }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f3f2ef'}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    Edit profile
-                  </button>
+                  <EditProfile user={profileUser} onProfileUpdated={handleProfileUpdated} />
                 ) : (
-                  <>
-                    <button
-                      onClick={handleFollowToggle}
-                      className="px-4 py-1.5 rounded-full text-sm font-semibold text-white transition"
-                      style={{ backgroundColor: '#0a66c2' }}
-                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#004182'}
-                      onMouseLeave={e => e.currentTarget.style.backgroundColor = '#0a66c2'}
-                    >
-                      {isFollowing ? 'Following' : '+ Follow'}
-                    </button>
-                    {/* <button
-                      className="px-4 py-1.5 rounded-full text-sm font-semibold transition"
-                      style={{ border: '1px solid #0a66c2', color: '#0a66c2' }}
-                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f3f2ef'}
-                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      Message
-                    </button> */}
-                  </>
+                  <button
+                    onClick={handleFollowToggle}
+                    className="px-4 py-1.5 rounded-full text-sm font-semibold text-white transition"
+                    style={{ backgroundColor: isFollowing ? '#666666' : '#0a66c2' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    {isFollowing ? 'Following' : '+ Follow'}
+                  </button>
                 )}
               </div>
             </div>
 
             {/* Name + Bio */}
-            <h2 className="text-xl font-semibold" style={{ color: '#000000e0' }}>
+            <h2 className="text-lg sm:text-xl font-semibold" style={{ color: '#000000e0' }}>
               {profileUser.fullName}
               {profileUser.isVerified && (
                 <span className="ml-1 text-sm" style={{ color: '#0a66c2' }}>✔</span>
@@ -174,7 +175,7 @@ const UserProfile = () => {
 
             {/* Stats row */}
             <div
-              className="flex gap-5 mt-3 pt-3"
+              className="flex gap-4 sm:gap-5 mt-3 pt-3 flex-wrap"
               style={{ borderTop: '1px solid #e0ddd6' }}
             >
               <div className="text-sm">
@@ -207,7 +208,7 @@ const UserProfile = () => {
 
         {/* ── Followers List ── */}
         {activeTab === 'followers' && (
-          <div className="bg-white rounded-lg mb-3 px-4 py-3" style={{ border: '1px solid #e0ddd6' }}>
+          <div className="bg-white rounded-lg mb-3 px-3 sm:px-4 py-3" style={{ border: '1px solid #e0ddd6' }}>
             <p className="text-sm font-semibold mb-2" style={{ color: '#000000e0' }}>Followers</p>
             {profileUser.followers.length === 0 ? (
               <p className="text-sm" style={{ color: '#00000066' }}>No followers yet</p>
@@ -226,9 +227,9 @@ const UserProfile = () => {
                     className="w-10 h-10 rounded-full object-cover"
                     alt={f.fullName}
                   />
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: '#000000e0' }}>{f.fullName}</p>
-                    <p className="text-xs" style={{ color: '#00000099' }}>@{f.username}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: '#000000e0' }}>{f.fullName}</p>
+                    <p className="text-xs truncate" style={{ color: '#00000099' }}>@{f.username}</p>
                   </div>
                 </Link>
               ))
@@ -238,7 +239,7 @@ const UserProfile = () => {
 
         {/* ── Following List ── */}
         {activeTab === 'following' && (
-          <div className="bg-white rounded-lg mb-3 px-4 py-3" style={{ border: '1px solid #e0ddd6' }}>
+          <div className="bg-white rounded-lg mb-3 px-3 sm:px-4 py-3" style={{ border: '1px solid #e0ddd6' }}>
             <p className="text-sm font-semibold mb-2" style={{ color: '#000000e0' }}>Following</p>
             {profileUser.following.length === 0 ? (
               <p className="text-sm" style={{ color: '#00000066' }}>Not following anyone yet</p>
@@ -257,9 +258,9 @@ const UserProfile = () => {
                     className="w-10 h-10 rounded-full object-cover"
                     alt={f.fullName}
                   />
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: '#000000e0' }}>{f.fullName}</p>
-                    <p className="text-xs" style={{ color: '#00000099' }}>@{f.username}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: '#000000e0' }}>{f.fullName}</p>
+                    <p className="text-xs truncate" style={{ color: '#00000099' }}>@{f.username}</p>
                   </div>
                 </Link>
               ))
@@ -296,7 +297,7 @@ const UserProfile = () => {
           <>
             {posts.length === 0 ? (
               <div
-                className="bg-white rounded-lg flex flex-col items-center justify-center py-16 gap-3"
+                className="bg-white rounded-lg flex flex-col items-center justify-center py-12 sm:py-16 gap-3 px-4"
                 style={{ border: '1px solid #e0ddd6' }}
               >
                 <div
@@ -320,20 +321,19 @@ const UserProfile = () => {
                 )}
               </div>
             ) : (
-              // ✅ Render full PostCards just like Feed
               posts.map((post) => (
                 <PostCard
                   key={post._id}
                   post={post}
-                  fetchPosts={fetchUserPosts}
+                  onPostDeleted={handlePostDeleted}
                 />
               ))
             )}
           </>
         )}
 
-        {/* Saved / Tagged placeholders */}
-        {(activeTab === 'saved' || activeTab === 'tagged') && (
+        {/* Saved placeholder */}
+        {activeTab === 'saved' && (
           <div
             className="bg-white rounded-lg flex items-center justify-center py-16"
             style={{ border: '1px solid #e0ddd6' }}

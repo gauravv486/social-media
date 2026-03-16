@@ -51,7 +51,7 @@ export const followUser = async (req, res) => {
         }
 
 
-        await User.findOneAndUpdate(currentUserId, {
+        await User.findByIdAndUpdate(currentUserId, {
             $push: { following: targetUserId }
         })
 
@@ -82,7 +82,7 @@ export const unfollowUser = async (req, res) => {
         const targetUserId = targetUser._id;
 
         // Can't unfollow yourself
-        if (targetUserId === currentUserId.toString()) {
+        if (targetUserId.equals(currentUserId)) {
             return res.status(400).json({ message: "You can't unfollow yourself" });
         }
 

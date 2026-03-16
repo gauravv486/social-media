@@ -9,7 +9,6 @@ const Logout = () => {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
     logout();                // clear Zustand store
     navigate('/login');
   };

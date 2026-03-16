@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore.js';
 
 const Register = () => {
-    const { login, loading, error, register } = useAuthStore();
+    const { loading, error, register } = useAuthStore();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -15,13 +15,11 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const result = await register(formData);
-
-        if (result.success) {
+        try {
+            await register(formData);
             navigate('/');
-        } else {
-            console.error('Register error:', result.error);
-            // show toast / set local error state etc.
+        } catch (err) {
+            console.error('Register error:', err);
         }
     };
 
@@ -37,7 +35,7 @@ const Register = () => {
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Social Media</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Nexus</h1>
                     <p className="text-gray-600">Register your account</p>
                 </div>
 
@@ -121,21 +119,21 @@ const Register = () => {
                         disabled={loading}
                         className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
                     >
-                        {loading ? 'Signing in...' : 'Sign Up'}
+                        {loading ? 'Signing up...' : 'Sign Up'}
                     </button>
                 </form>
 
                 {/* Register Link */}
-                {/* <p className="text-center mt-6 text-sm text-gray-600">
-                    Don't have an account?{' '}
+                <p className="text-center mt-6 text-sm text-gray-600">
+                    Already have account?{' '}
                     <button
                         type="button"
-                        onClick={() => navigate('/register')}
+                        onClick={() => navigate('/login')}
                         className="text-blue-600 hover:text-blue-700 font-medium"
                     >
-                        Create account
+                        Login
                     </button>
-                </p> */}
+                </p>
             </div>
         </div>
     );

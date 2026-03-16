@@ -1,11 +1,10 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import API from '../../api/axios.js';
 import useAuthStore from '../../store/authStore.js';
-import { BsImage, BsPlayCircle, BsCalendarEvent } from 'react-icons/bs';
-import { HiOutlineNewspaper } from 'react-icons/hi';
+import { BsImage } from 'react-icons/bs';
 import { IoCloseOutline } from 'react-icons/io5';
 
-const CreatePost = ({ fetchPosts }) => {
+const CreatePost = ({ onPostCreated }) => {
     const { user } = useAuthStore();
     const [content, setContent] = useState('');
     const [image, setImage] = useState(null);
@@ -24,7 +23,7 @@ const CreatePost = ({ fetchPosts }) => {
     const removeImage = () => {
         setImage(null);
         setPreview(null);
-        fileInputRef.current.value = '';
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleSubmit = async (e) => {
@@ -34,12 +33,13 @@ const CreatePost = ({ fetchPosts }) => {
             const formData = new FormData();
             formData.append('content', content);
             if (image) formData.append('image', image);
-            await API.post('/posts/createpost', formData);
+            const { data } = await API.post('/posts/createpost', formData);
             setContent('');
             setImage(null);
             setPreview(null);
-            fileInputRef.current.value = '';
-            fetchPosts();
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            // Real-time: add post to parent state immediately
+            if (onPostCreated) onPostCreated(data);
         } catch (error) {
             console.error('Error creating post:', error);
         } finally {
@@ -55,18 +55,18 @@ const CreatePost = ({ fetchPosts }) => {
             <form onSubmit={handleSubmit}>
 
                 {/* ── Top Row: Avatar + Trigger ── */}
-                <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+                <div className="flex items-center gap-2 px-3 sm:px-4 pt-3 pb-2">
                     <img
                         src={user?.profilePicture ||
                             `https://ui-avatars.com/api/?name=${user?.fullName}&background=0D8ABC&color=fff`}
-                        className="w-12 h-12 rounded-full object-cover shrink-0"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shrink-0"
                         alt="avatar"
                     />
                     <textarea
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         placeholder="Start a post"
-                        rows={content ? 3 : 1}
+                        rows={1}
                         className="flex-1 resize-none text-sm rounded-full px-4 py-2.5 outline-none"
                         style={{
                             border: '1px solid #b0aca4',
@@ -79,7 +79,7 @@ const CreatePost = ({ fetchPosts }) => {
 
                 {/* ── Image Preview ── */}
                 {preview && (
-                    <div className="relative mx-4 mb-3">
+                    <div className="relative mx-3 sm:mx-4 mb-3">
                         <img
                             src={preview}
                             alt="Preview"
@@ -133,7 +133,7 @@ const CreatePost = ({ fetchPosts }) => {
                             </button>
                         </div>
 
-                        
+
                     </div>
 
                     {/* Post Button — only visible when content is typed */}

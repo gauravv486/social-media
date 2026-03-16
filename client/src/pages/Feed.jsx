@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getPosts } from '../api/posts.js';
 import useAuthStore from '../store/authStore.js';
 import CreatePost from '../components/post/CreatePost';
@@ -23,6 +23,21 @@ const Feed = () => {
       console.error('Error fetching posts:', error);
     }
   };
+
+  // Real-time: prepend new post to local state
+  const handlePostCreated = useCallback((newPost) => {
+    setPosts(prev => [newPost, ...prev]);
+  }, []);
+
+  // Real-time: update a post in local state (likes, comments)
+  const handlePostUpdated = useCallback((updatedPost) => {
+    setPosts(prev => prev.map(p => p._id === updatedPost._id ? updatedPost : p));
+  }, []);
+
+  // Real-time: remove a post from local state
+  const handlePostDeleted = useCallback((postId) => {
+    setPosts(prev => prev.filter(p => p._id !== postId));
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f3f2ef' }}>
@@ -50,7 +65,7 @@ const Feed = () => {
                 className="w-6 h-6 rounded-full object-cover"
                 alt="avatar"
               />
-              <span className="text-xs mt-0.5">Me</span>
+              <span className="text-xs mt-0.5 hidden sm:inline">Me</span>
             </Link>
 
             {/* Logout */}
@@ -60,7 +75,7 @@ const Feed = () => {
       </header>
 
       {/* ── Main Layout ── */}
-      <div className="max-w-6xl mx-auto px-4 py-5 flex gap-5">
+      <div className="max-w-6xl mx-auto px-2 sm:px-4 py-5 flex gap-5">
 
         {/* Left Sidebar */}
         <aside className="hidden lg:block w-64 shrink-0">
@@ -68,8 +83,8 @@ const Feed = () => {
         </aside>
 
         {/* Center Feed */}
-        <main className="flex-1 max-w-xl">
-          <CreatePost fetchPosts={fetchPosts} />
+        <main className="flex-1 min-w-0 max-w-xl mx-auto lg:mx-0">
+          <CreatePost onPostCreated={handlePostCreated} />
 
           {posts.length === 0 ? (
             <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -80,7 +95,7 @@ const Feed = () => {
               <PostCard
                 key={post._id}
                 post={post}
-                fetchPosts={fetchPosts}
+                onPostDeleted={handlePostDeleted}
               />
             ))
           )}
@@ -91,7 +106,6 @@ const Feed = () => {
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-semibold text-gray-900">Nexus</h3>
-              <span className="text-gray-400 text-xs">ℹ️</span>
             </div>
             <div className="space-y-3">
               {[

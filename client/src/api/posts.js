@@ -16,7 +16,7 @@ export const likePost = async (postId) => {
 };
 
 export const addComment = async (postId, content) => {
-  const response = await API.post(`/posts/comment/${postId}/comment`, { content });
+  const response = await API.post(`/posts/${postId}/comment`, { content });
   return response.data;
 };
 
